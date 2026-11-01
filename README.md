@@ -1,39 +1,52 @@
-# index.html 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nexora | Blockchain Project</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 40px 20px;
-      background: #101522;
-      color: #ffffff;
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
-    h1 { color: #79c8ff; font-size: 42px; }
-    p { line-height: 1.7; color: #d2d9e5; }
-    .card {
-      max-width: 540px;
-      margin: 30px auto;
-      padding: 24px;
-      border: 1px solid #34435b;
-      border-radius: 16px;
-    }
-  </style>
-</head>
-<body>
-  <h1>NEXORA</h1>
-  <p>A Proof-of-Work Blockchain Project</p>
-  <div class="card">
-    <h2>Project Overview</h2>
-    <p>Planned maximum supply: 30,000,000 coins</p>
-    <p>Consensus: Proof of Work</p>
-    <p>Issuance: Planned halving schedule</p>
-    <p>Status: Development planning</p>
-  </div>
-</body>
-</html>
+# NEXORA — Native Proof-of-Work Blockchain (Starter)
+
+> **Status: experimental prototype / draft. Not production-ready.**
+>
+> This repository is a starting point for research and testnet development. It is not audited,
+> does not provide a wallet or peer-to-peer network, and must not be used to hold real funds.
+
+## Project plan
+- Native coin on a planned independent blockchain
+- Planned maximum supply: **30,000,000 NEXORA**
+- Consensus concept: Proof of Work (PoW)
+- Initial milestone: documentation + a small educational single-process prototype
+
+## Repository map
+- `whitepaper.md` — draft whitepaper
+- `docs/tokenomics.md` — proposed issuance parameters and decisions still needed
+- `docs/roadmap.md` — staged development roadmap
+- `nexora/prototype.py` — educational block/hash/PoW demonstration
+- `tests/test_prototype.py` — basic tests
+- `index.html` — simple project landing page
+
+## Important design decisions still open
+1. Coin precision / smallest unit
+2. Block interval and difficulty adjustment
+3. Reward schedule and halving interval
+4. Genesis allocation (recommended: none until transparently specified)
+5. Transaction format, signatures, fee rules and mempool
+6. Peer-to-peer networking and chain synchronization
+7. Reorganization rules, anti-spam protections and denial-of-service limits
+8. Independent security review and legal review
+
+The 30,000,000 figure is a **planned cap**, not an implemented guarantee in this starter.
+A production implementation must enforce the cap in consensus rules and pass adversarial tests.
+
+## Run the educational prototype
+Requires Python 3.10+ on a computer or a compatible Android Python environment.
+
+```bash
+python -m unittest discover -s tests -v
+python -m nexora.prototype
+```
+
+This prototype mines toy blocks locally. It is **not a complete blockchain**, does not validate
+real transactions, and does not connect to a network.
+
+## Suggested next milestones
+1. Agree and publish the whitepaper parameters.
+2. Build a formal protocol specification and test vectors.
+3. Implement transaction signatures and consensus validation.
+4. Build a local multi-node testnet.
+5. Add wallets only after key handling and transaction rules are reviewed.
+6. Conduct independent security review before any public launch.
