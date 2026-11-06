@@ -1,5 +1,5 @@
 import unittest
-
+from nexora.prototype import Block, DemoChain
 from blockchain_core import Block, NexoraChain
 
 
