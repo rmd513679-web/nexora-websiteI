@@ -1,5 +1,5 @@
 import unittest
-from prototype import Block,DemoChain
+from nexora.prototype import Block, DemoChain
 
 class PrototypeTests(unittest.TestCase):
     def test_chain_valid_after_adding_block(self):
