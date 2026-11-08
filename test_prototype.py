@@ -1,5 +1,6 @@
 import unittest
-from nexora.prototype import Block, DemoChain
+
+from prototype import Block, DemoChain
 
 
 class PrototypeTests(unittest.TestCase):
@@ -24,6 +25,8 @@ class PrototypeTests(unittest.TestCase):
         block = Block(1, 1.0, "0" * 64, "test")
         with self.assertRaises(ValueError):
             block.mine(0)
+        with self.assertRaises(ValueError):
+            block.mine(7)
 
 
 if __name__ == "__main__":
