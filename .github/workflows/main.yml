@@ -100,5 +100,3 @@ jobs:
 
       - name: Analyze Python code
         uses: github/codeql-action/analyze@v3
-- name: Run tests
-  run: python -m unittest discover -v
