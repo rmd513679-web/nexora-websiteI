@@ -1,6 +1,6 @@
 import unittest
 
-from prototype import Block, DemoChain
+from nexora.prototype import Block, DemoChain
 
 
 class PrototypeTests(unittest.TestCase):
