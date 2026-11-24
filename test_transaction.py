@@ -95,3 +95,47 @@ class TransactionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+def test_json_round_trip(self):
+        tx = self.create_signed_transaction()
+
+        restored = Transaction.from_json(tx.to_json())
+
+        self.assertEqual(restored.to_dict(), tx.to_dict())
+        self.assertTrue(restored.validate())
+
+    def test_dict_round_trip(self):
+        tx = self.create_signed_transaction()
+
+        restored = Transaction.from_dict(tx.to_dict())
+
+        self.assertEqual(restored.to_dict(), tx.to_dict())
+        self.assertTrue(restored.validate())
+
+    def test_invalid_json_rejected(self):
+        with self.assertRaises(ValueError):
+            Transaction.from_json("not valid json")
+
+    def test_missing_field_rejected(self):
+        tx = self.create_signed_transaction()
+        data = tx.to_dict()
+        del data["signature"]
+
+        with self.assertRaises(ValueError):
+            Transaction.from_dict(data)
+
+    def test_tampered_json_rejected(self):
+        tx = self.create_signed_transaction()
+        data = tx.to_dict()
+        data["amount"] = 999
+
+        with self.assertRaises(ValueError):
+            Transaction.from_dict(data)
+
+    def test_extra_field_rejected(self):
+        tx = self.create_signed_transaction()
+        data = tx.to_dict()
+        data["unexpected"] = "value"
+
+        with self.assertRaises(ValueError):
+            Transaction.from_dict(data)
