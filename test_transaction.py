@@ -96,7 +96,7 @@ class TransactionTests(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
- def test_json_round_trip(self):
+def test_json_round_trip(self):
         tx = self.create_signed_transaction()
 
         restored = Transaction.from_json(tx.to_json())
