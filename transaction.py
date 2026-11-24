@@ -173,4 +173,64 @@ class Transaction:
             "tx_id": self.tx_id,
             "public_key": self.public_key,
             "signature": self.signature,
-            }
+        }
+
+    def to_json(self):
+        """Convert the transaction into canonical JSON."""
+        return canonical_json(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data):
+        """Create and validate a transaction from a dictionary."""
+
+        if not isinstance(data, dict):
+            raise ValueError("Transaction data must be a dictionary.")
+
+        expected_fields = {
+            "sender",
+            "recipient",
+            "amount",
+            "fee",
+            "nonce",
+            "timestamp",
+            "tx_id",
+            "public_key",
+            "signature",
+        }
+
+        if set(data.keys()) != expected_fields:
+            raise ValueError("Invalid transaction data fields.")
+
+        if not isinstance(data["tx_id"], str) or not data["tx_id"]:
+            raise ValueError("Invalid transaction ID.")
+
+        tx = cls(
+            sender=data["sender"],
+            recipient=data["recipient"],
+            amount=data["amount"],
+            fee=data["fee"],
+            nonce=data["nonce"],
+            timestamp=data["timestamp"],
+            tx_id=data["tx_id"],
+            public_key=data["public_key"],
+            signature=data["signature"],
+        )
+
+        if not tx.validate():
+            raise ValueError("Transaction validation failed.")
+
+        return tx
+
+    @classmethod
+    def from_json(cls, json_data):
+        """Create and validate a transaction from JSON."""
+
+        if not isinstance(json_data, str):
+            raise ValueError("JSON data must be a string.")
+
+        try:
+            data = json.loads(json_data)
+        except (json.JSONDecodeError, TypeError) as exc:
+            raise ValueError("Invalid transaction JSON.") from exc
+
+        return cls.from_dict(data)
