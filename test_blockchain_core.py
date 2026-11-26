@@ -14,7 +14,54 @@ from digital_signature import generate_key_pair
 from transaction import Transaction
 
 
-class CoreTests(unittest.TestCase):
+class CoreTests(unittest.TestCase): 
+    
+    def test_sequential_nonce_across_blocks(self):
+        chain = NexoraChain(difficulty=1)
+        private_key, public_key = generate_key_pair()
+
+        tx1 = self.create_transaction_with_keys(
+            private_key, public_key, 1, "Bob"
+        )
+        tx2 = self.create_transaction_with_keys(
+            private_key, public_key, 2, "Charlie"
+        )
+
+        chain.mine_block("first transaction", [tx1])
+        chain.mine_block("second transaction", [tx2])
+
+        self.assertTrue(chain.validate())
+
+    def test_out_of_order_nonce_rejected(self):
+        chain = NexoraChain(difficulty=1)
+        private_key, public_key = generate_key_pair()
+
+        tx2 = self.create_transaction_with_keys(
+            private_key, public_key, 2, "Charlie"
+        )
+
+        with self.assertRaises(ValueError):
+            chain.mine_block("wrong nonce", [tx2])
+
+        self.assertTrue(chain.validate())
+
+    def test_nonce_gap_rejected(self):
+        chain = NexoraChain(difficulty=1)
+        private_key, public_key = generate_key_pair()
+
+        tx1 = self.create_transaction_with_keys(
+            private_key, public_key, 1, "Bob"
+        )
+        tx3 = self.create_transaction_with_keys(
+            private_key, public_key, 3, "David"
+        )
+
+        chain.mine_block("nonce one", [tx1])
+
+        with self.assertRaises(ValueError):
+            chain.mine_block("nonce three", [tx3])
+
+        self.assertTrue(chain.validate())
 
     def create_signed_transaction(self, nonce=1, recipient="Bob"):
         private_key, public_key = generate_key_pair()
