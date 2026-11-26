@@ -1,23 +1,56 @@
 import unittest
 
 from blockchain_core import (
-    COIN, MAX_SUPPLY, INITIAL_REWARD, HALVING_INTERVAL,
-    NexoraChain, Block, block_reward,
+    COIN,
+    MAX_SUPPLY,
+    INITIAL_REWARD,
+    HALVING_INTERVAL,
+    NexoraChain,
+    Block,
+    block_reward,
 )
+
+from digital_signature import generate_key_pair
+from transaction import Transaction
 
 
 class CoreTests(unittest.TestCase):
+
+    def create_signed_transaction(self, nonce=1, recipient="Bob"):
+        private_key, public_key = generate_key_pair()
+
+        tx = Transaction(
+            sender="temporary",
+            recipient=recipient,
+            amount=100,
+            fee=2,
+            nonce=nonce,
+            timestamp=1000,
+        )
+
+        tx.sign(private_key, public_key)
+        return tx
+
     def test_initial_reward(self):
         self.assertEqual(block_reward(1, 0), 50 * COIN)
 
     def test_reward_at_halving_boundary(self):
-        self.assertEqual(block_reward(HALVING_INTERVAL, 0), INITIAL_REWARD)
+        self.assertEqual(
+            block_reward(HALVING_INTERVAL, 0),
+            INITIAL_REWARD,
+        )
 
     def test_reward_after_halving(self):
-        self.assertEqual(block_reward(HALVING_INTERVAL + 1, 0), INITIAL_REWARD // 2)
+        self.assertEqual(
+            block_reward(HALVING_INTERVAL + 1, 0),
+            INITIAL_REWARD // 2,
+        )
 
     def test_second_halving(self):
-        self.assertEqual(block_reward(2 * HALVING_INTERVAL + 1, 0), INITIAL_REWARD // 4)
+        self.assertEqual(
+            block_reward(2 * HALVING_INTERVAL + 1, 0),
+            INITIAL_REWARD // 4,
+        )
 
     def test_partial_reward_at_supply_cap(self):
         self.assertEqual(block_reward(1, MAX_SUPPLY - 7), 7)
@@ -34,7 +67,12 @@ class CoreTests(unittest.TestCase):
             block_reward(0, 0)
 
     def test_non_integer_inputs_rejected(self):
-        for height, issued in [(1.5, 0), (True, 0), (1, 1.2), (1, False)]:
+        for height, issued in [
+            (1.5, 0),
+            (True, 0),
+            (1, 1.2),
+            (1, False),
+        ]:
             with self.subTest(height=height, issued=issued):
                 with self.assertRaises(ValueError):
                     block_reward(height, issued)
@@ -61,24 +99,31 @@ class CoreTests(unittest.TestCase):
         chain = NexoraChain(difficulty=1)
         for _ in range(5):
             chain.mine_block("supply test")
+
         self.assertLessEqual(chain.issued_supply, MAX_SUPPLY)
         self.assertTrue(chain.validate())
 
     def test_zero_reward_after_integer_schedule_ends(self):
         height = 1
+
         while block_reward(height, 0) > 0:
             height += HALVING_INTERVAL
+
         self.assertEqual(block_reward(height, 0), 0)
 
     def test_total_emission_schedule_is_below_20m_due_to_integer_rounding(self):
         total = 0
         height = 1
+
         while True:
             reward = block_reward(height, 0)
+
             if reward == 0:
                 break
+
             total += reward * HALVING_INTERVAL
             height += HALVING_INTERVAL
+
         self.assertLess(total, 20_000_000 * COIN)
         self.assertGreater(total, 19_999_000 * COIN)
 
@@ -87,6 +132,65 @@ class CoreTests(unittest.TestCase):
             with self.subTest(difficulty=difficulty):
                 with self.assertRaises(ValueError):
                     NexoraChain(difficulty=difficulty)
+
+    def test_block_accepts_signed_transaction(self):
+        chain = NexoraChain(difficulty=1)
+        tx = self.create_signed_transaction()
+
+        block = chain.mine_block(
+            "transaction test",
+            transactions=[tx],
+        )
+
+        self.assertEqual(len(block.transactions), 1)
+        self.assertTrue(block.transactions[0].validate())
+        self.assertTrue(chain.validate())
+
+    def test_invalid_transaction_rejected(self):
+        chain = NexoraChain(difficulty=1)
+        tx = self.create_signed_transaction()
+        tx.amount = 999
+
+        with self.assertRaises(ValueError):
+            chain.mine_block(
+                "invalid transaction",
+                transactions=[tx],
+            )
+
+    def test_duplicate_transaction_in_block_rejected(self):
+        chain = NexoraChain(difficulty=1)
+        tx = self.create_signed_transaction()
+
+        with self.assertRaises(ValueError):
+            chain.mine_block(
+                "duplicate test",
+                transactions=[tx, tx],
+            )
+
+    def test_duplicate_transaction_across_blocks_detected(self):
+        chain = NexoraChain(difficulty=1)
+        tx = self.create_signed_transaction()
+
+        chain.mine_block("first block", transactions=[tx])
+
+        second = chain.mine_block(
+            "second block",
+            transactions=[tx],
+        )
+
+        self.assertFalse(chain.validate())
+
+    def test_transaction_tampering_detected(self):
+        chain = NexoraChain(difficulty=1)
+        tx = self.create_signed_transaction()
+
+        block = chain.mine_block(
+            "transaction test",
+            transactions=[tx],
+        )
+
+        block.transactions[0].amount = 500
+        self.assertFalse(chain.validate())
 
 
 if __name__ == "__main__":
