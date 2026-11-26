@@ -92,11 +92,7 @@ class TransactionTests(unittest.TestCase):
         self.assertIn("public_key", data)
         self.assertIn("tx_id", data)
 
-
-if __name__ == "__main__":
-    unittest.main()
-
-def test_json_round_trip(self):
+    def test_json_round_trip(self):
         tx = self.create_signed_transaction()
 
         restored = Transaction.from_json(tx.to_json())
@@ -139,3 +135,7 @@ def test_json_round_trip(self):
 
         with self.assertRaises(ValueError):
             Transaction.from_dict(data)
+
+
+if __name__ == "__main__":
+    unittest.main()
