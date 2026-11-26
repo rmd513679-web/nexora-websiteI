@@ -9,6 +9,7 @@ import time
 from typing import List
 
 from transaction import Transaction
+from transaction_state import TransactionState
 
 
 COIN = 100_000_000
@@ -85,9 +86,7 @@ class Block:
             or isinstance(difficulty, bool)
             or not 1 <= difficulty <= 5
         ):
-            raise ValueError(
-                "demo difficulty must be an integer from 1 to 5"
-            )
+            raise ValueError("invalid demo difficulty")
 
         target = "0" * difficulty
 
@@ -117,11 +116,11 @@ class NexoraChain:
 
         if not self.blocks:
             genesis = Block(
-                0,
-                int(time.time()),
-                "0" * 64,
-                0,
-                "Prototype genesis; no monetary value",
+                height=0,
+                timestamp=int(time.time()),
+                previous_hash="0" * 64,
+                reward=0,
+                note="Prototype genesis; no monetary value",
             )
             genesis.mine(self.difficulty)
             self.blocks.append(genesis)
@@ -140,16 +139,24 @@ class NexoraChain:
         if not isinstance(transactions, list):
             raise ValueError("transactions must be a list")
 
-        seen_ids = set()
+        # Never build on an invalid existing chain.
+        if not self.validate():
+            raise ValueError("existing chain is invalid")
 
+        # Rebuild transaction state from existing blocks.
+        state = TransactionState()
+
+        for existing_block in self.blocks[1:]:
+            for tx in existing_block.transactions:
+                if not state.accept(tx):
+                    raise ValueError("existing transaction state is invalid")
+
+        # Check candidate transactions in order.
         for tx in transactions:
-            if not isinstance(tx, Transaction) or not tx.validate():
-                raise ValueError("invalid transaction")
-
-            if tx.tx_id in seen_ids:
-                raise ValueError("duplicate transaction")
-
-            seen_ids.add(tx.tx_id)
+            if not state.accept(tx):
+                raise ValueError(
+                    "invalid, duplicate, or out-of-order transaction"
+                )
 
         previous = self.blocks[-1]
         height = previous.height + 1
@@ -181,26 +188,44 @@ class NexoraChain:
 
         total = 0
         target = "0" * self.difficulty
-        all_tx_ids = set()
+        transaction_state = TransactionState()
 
         try:
             for index, block in enumerate(self.blocks):
                 if not isinstance(block, Block):
                     return False
 
-                if not isinstance(block.height, int) or isinstance(block.height, bool):
+                if (
+                    not isinstance(block.height, int)
+                    or isinstance(block.height, bool)
+                ):
                     return False
 
-                if not isinstance(block.timestamp, int) or isinstance(block.timestamp, bool) or block.timestamp < 0:
+                if (
+                    not isinstance(block.timestamp, int)
+                    or isinstance(block.timestamp, bool)
+                    or block.timestamp < 0
+                ):
                     return False
 
-                if not isinstance(block.previous_hash, str) or len(block.previous_hash) != 64:
+                if (
+                    not isinstance(block.previous_hash, str)
+                    or len(block.previous_hash) != 64
+                ):
                     return False
 
-                if not isinstance(block.reward, int) or isinstance(block.reward, bool) or block.reward < 0:
+                if (
+                    not isinstance(block.reward, int)
+                    or isinstance(block.reward, bool)
+                    or block.reward < 0
+                ):
                     return False
 
-                if not isinstance(block.nonce, int) or isinstance(block.nonce, bool) or block.nonce < 0:
+                if (
+                    not isinstance(block.nonce, int)
+                    or isinstance(block.nonce, bool)
+                    or block.nonce < 0
+                ):
                     return False
 
                 if not isinstance(block.note, str):
@@ -209,13 +234,11 @@ class NexoraChain:
                 if not isinstance(block.transactions, list):
                     return False
 
-                if not isinstance(block.hash, str):
-                    return False
-
-                if block.hash != block.calculate_hash():
-                    return False
-
-                if not block.hash.startswith(target):
+                if (
+                    not isinstance(block.hash, str)
+                    or block.hash != block.calculate_hash()
+                    or not block.hash.startswith(target)
+                ):
                     return False
 
                 if index == 0:
@@ -240,14 +263,10 @@ class NexoraChain:
                 if block.reward != block_reward(block.height, total):
                     return False
 
+                # Validate signature, duplicate ID, and sender nonce.
                 for tx in block.transactions:
-                    if not isinstance(tx, Transaction) or not tx.validate():
+                    if not transaction_state.accept(tx):
                         return False
-
-                    if tx.tx_id in all_tx_ids:
-                        return False
-
-                    all_tx_ids.add(tx.tx_id)
 
                 total += block.reward
 
