@@ -167,18 +167,22 @@ class CoreTests(unittest.TestCase):
                 transactions=[tx, tx],
             )
 
-    def test_duplicate_transaction_across_blocks_detected(self):
+    def test_duplicate_transaction_across_blocks_rejected(self):
         chain = NexoraChain(difficulty=1)
         tx = self.create_signed_transaction()
 
-        chain.mine_block("first block", transactions=[tx])
-
-        second = chain.mine_block(
-            "second block",
+        chain.mine_block(
+            "first block",
             transactions=[tx],
         )
 
-        self.assertFalse(chain.validate())
+        with self.assertRaises(ValueError):
+            chain.mine_block(
+                "second block",
+                transactions=[tx],
+            )
+
+        self.assertTrue(chain.validate())
 
     def test_transaction_tampering_detected(self):
         chain = NexoraChain(difficulty=1)
